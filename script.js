@@ -21,117 +21,192 @@ function initTestimonials() {
     const slider = document.querySelector('.testimonials-slider');
     const track = document.querySelector('.testimonials-track');
     const slides = document.querySelectorAll('.testimonial-slide');
-    const dots = document.querySelectorAll('[data-index]');
+    const dotsContainer = document.querySelector('.testimonials-dots');
     const prevButton = document.getElementById('prevButton');
     const nextButton = document.getElementById('nextButton');
-    
-    if (!slider || !track || !slides.length) return;
-    
+
+    if (!slider || !track || slides.length === 0) return;
+
+    // إضافة خاصية dir للعناصر
+    slider.setAttribute('dir', 'rtl');
+    track.setAttribute('dir', 'rtl');
+    track.style.display = 'flex';
+
     let currentIndex = 0;
-    let startPos = 0;
+    let startX = 0;
     let currentTranslate = 0;
-    let prevTranslate = 0;
     let isDragging = false;
     let autoplayInterval = null;
-    
-    function updateSlider() {
-        const percentage = currentIndex * -100;
-        track.style.transform = `translateX(${percentage}%)`;
-        
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === currentIndex);
-        });
-        
-        prevButton.disabled = currentIndex === 0;
-        nextButton.disabled = currentIndex === slides.length - 1;
+    let slideWidth = 0;
+    let slidesPerView = getSlidesPerView();
+    let maxIndex = 0;
+
+    function getSlidesPerView() {
+        const width = window.innerWidth;
+        if (width < 640) return 1;
+        if (width < 1024) return 2;
+        return 3;
     }
-    
-    function navigate(direction) {
-        currentIndex = direction === 'prev' 
-            ? Math.max(currentIndex - 1, 0)
-            : Math.min(currentIndex + 1, slides.length - 1);
+
+    function updateSlideWidth() {
+        slidesPerView = getSlidesPerView();
+        const containerWidth = slider.offsetWidth;
+        const gap = 24;
+        slideWidth = (containerWidth - (gap * (slidesPerView - 1))) / slidesPerView;
+        maxIndex = Math.max(0, slides.length - slidesPerView);
+        
+        slides.forEach(slide => {
+            slide.style.width = `${slideWidth}px`;
+            slide.style.flexShrink = '0';
+        });
+    }
+
+    function updateSlider(animate = true) {
+        updateSlideWidth();
+        const translateX = currentIndex * (slideWidth + 24); // تغيير الإشارة لـ RTL
+        track.style.transition = animate ? 'transform 0.5s ease-out' : 'none';
+        track.style.transform = `translateX(${translateX}px)`;
+
+        updateDots();
+        updateButtons();
+    }
+
+    function updateDots() {
+        dotsContainer.innerHTML = '';
+        
+        for (let i = 0; i <= maxIndex; i++) {
+            const dot = document.createElement('button');
+            dot.className = `w-3 h-3 rounded-full transition-all duration-300 hover:bg-blue-500 dark:hover:bg-blue-400 ${
+                i === currentIndex ? 'bg-blue-500 dark:bg-blue-400 w-6' : 'bg-gray-300 dark:bg-gray-600'
+            }`;
+            dot.dataset.index = i;
+            dot.addEventListener('click', () => goToSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+    }
+
+    function updateButtons() {
+        prevButton.disabled = currentIndex >= maxIndex;
+        nextButton.disabled = currentIndex <= 0;
+    }
+
+    function goToSlide(index) {
+        currentIndex = Math.max(0, Math.min(index, maxIndex));
         updateSlider();
     }
-    
-    function dragStart(e) {
-        startPos = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        if (e.type !== 'touchstart') e.preventDefault();
+
+    function next() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateSlider();
+        }
+    }
+
+    function prev() {
+        if (currentIndex < maxIndex) {
+            currentIndex++;
+            updateSlider();
+        }
+    }
+
+    function handleDragStart(e) {
         isDragging = true;
+        startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        currentTranslate = currentIndex * (slideWidth + 24);
+        track.style.transition = 'none';
         track.style.cursor = 'grabbing';
     }
-    
-    function drag(e) {
+
+    function handleDragMove(e) {
         if (!isDragging) return;
-        e.preventDefault();
+        const currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const diff = startX - currentX; // عكس الاتجاه لـ RTL
         
-        const currentPosition = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        const diff = currentPosition - startPos;
-        currentTranslate = prevTranslate + diff;
-        track.style.transform = `translateX(${currentTranslate}px)`;
-    }
-    
-    function dragEnd() {
-        isDragging = false;
-        track.style.cursor = 'grab';
-        
-        const movedBy = currentTranslate - prevTranslate;
-        if (Math.abs(movedBy) > 100) {
-            currentIndex = movedBy < 0 
-                ? Math.min(currentIndex + 1, slides.length - 1)
-                : Math.max(currentIndex - 1, 0);
+        if ((currentIndex <= 0 && diff < 0) || (currentIndex >= maxIndex && diff > 0)) {
+            return;
         }
         
-        updateSlider();
+        const newTranslate = currentTranslate + diff;
+        track.style.transform = `translateX(${newTranslate}px)`;
     }
-    
-    function startAutoplay() {
-        if (autoplayInterval) return;
-        
-        autoplayInterval = setInterval(() => {
-            currentIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
+
+    function handleDragEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        const currentX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
+        const diff = startX - currentX; // عكس الاتجاه لـ RTL
+
+        if (Math.abs(diff) > slideWidth * 0.2) {
+            diff > 0 ? prev() : next();
+        } else {
             updateSlider();
+        }
+
+        track.style.cursor = '';
+    }
+
+    function startAutoplay() {
+        if (autoplayInterval) clearInterval(autoplayInterval);
+        autoplayInterval = setInterval(() => {
+            if (currentIndex <= 0) {
+                goToSlide(maxIndex);
+            } else {
+                next();
+            }
         }, 5000);
     }
-    
+
     function stopAutoplay() {
-        if (!autoplayInterval) return;
-        
         clearInterval(autoplayInterval);
         autoplayInterval = null;
     }
-    
-    // Event Listeners
-    prevButton.addEventListener('click', () => navigate('prev'));
-    nextButton.addEventListener('click', () => navigate('next'));
-    dots.forEach(dot => {
-        dot.addEventListener('click', () => {
-            currentIndex = parseInt(dot.dataset.index);
-            updateSlider();
-        });
+
+    // تعديل أحداث الأزرار لتتناسب مع RTL
+    prevButton.addEventListener('click', () => {
+        prev();
+        stopAutoplay();
     });
     
-    // Touch Events
-    track.addEventListener('touchstart', dragStart);
-    track.addEventListener('touchend', dragEnd);
-    track.addEventListener('touchmove', drag);
+    nextButton.addEventListener('click', () => {
+        next();
+        stopAutoplay();
+    });
+
+    // أحداث السحب
+    track.addEventListener('mousedown', handleDragStart);
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
     
-    // Mouse Events
-    track.addEventListener('mousedown', dragStart);
-    track.addEventListener('mouseup', dragEnd);
-    track.addEventListener('mouseleave', dragEnd);
-    track.addEventListener('mousemove', drag);
-    
-    // Hover Events
+    track.addEventListener('touchstart', handleDragStart, { passive: true });
+    document.addEventListener('touchmove', handleDragMove, { passive: false });
+    document.addEventListener('touchend', handleDragEnd);
+
+    // التحكم بالتلقائي
     slider.addEventListener('mouseenter', stopAutoplay);
     slider.addEventListener('mouseleave', startAutoplay);
-    
-    // Initialize
-    updateSlider();
-    startAutoplay();
+
+    // تعديلات حجم النافذة
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const newSlidesPerView = getSlidesPerView();
+            if (newSlidesPerView !== slidesPerView) {
+                slidesPerView = newSlidesPerView;
+                updateSlideWidth();
+                currentIndex = Math.min(currentIndex, maxIndex);
+                updateSlider(false);
+            }
+        }, 200);
+    });
+
+    // التهيئة الأولية
+    updateSlideWidth();
+    updateSlider(false);
+   // startAutoplay();
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initTestimonials);
+
 
 // Projects Modal
 const projectCards = document.querySelectorAll('.project-card');
@@ -194,7 +269,41 @@ projectCards.forEach(card => {
 // Close modal when clicking outside
 modalOverlay.addEventListener('click', closeModal);
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
+    const overlay = document.querySelector('.mobile-menu-overlay');
+
+    if (mobileMenuBtn && navLinks && overlay) {
+        const toggleMenu = () => {
+            navLinks.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+        };
+
+        mobileMenuBtn.addEventListener('click', toggleMenu);
+
+        // Close menu when clicking overlay
+        overlay.addEventListener('click', toggleMenu);
+
+        // Close menu when clicking on a navigation link only
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (navLinks.classList.contains('active')) {
+                    toggleMenu();
+                }
+            });
+        });
+
+        // Close menu when pressing Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && navLinks.classList.contains('active')) {
+                toggleMenu();
+            }
+        });
+    }
+
     // Small delay to ensure all elements are properly rendered
     setTimeout(initTestimonials, 100);
 });
@@ -228,14 +337,40 @@ if (contactForm) {
 }
 
 // Smooth scroll for navigation links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
+document.addEventListener('click', function(e) {
+    // Find closest anchor tag if clicked element is inside one
+    const anchor = e.target.closest('a');
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href');
+    if (!href || href === '#') {
         e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        return;
+    }
+
+    if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href.substring(1);
+        const target = document.getElementById(targetId);
         if (target) {
-            target.scrollIntoView({
+            // Close mobile menu if it's open
+            const navLinks = document.querySelector('.nav-links');
+            const overlay = document.querySelector('.mobile-menu-overlay');
+            if (navLinks && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // Smooth scroll to target
+            const headerOffset = 80; // Height of your fixed header
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
                 behavior: 'smooth'
             });
         }
-    });
+    }
 });
