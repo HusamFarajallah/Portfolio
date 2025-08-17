@@ -240,7 +240,7 @@ function showProjectDetails(project) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-            <img src="${image}" alt="${title}" class="w-full h-64 object-cover rounded-lg mb-4">
+            <img src="${image}" alt="${title}" class="w-full h-full object-cover rounded-lg mb-4">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${title}</h3>
             <p class="text-gray-600 dark:text-gray-300 mb-6">${description}</p>
             <div class="flex flex-wrap gap-2">
