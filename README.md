@@ -21,13 +21,12 @@ Welcome to my personal portfolio website! This is a showcase of my work, skills,
 ### Prerequisites
 
 - A modern web browser (Chrome, Firefox, Safari, Edge)
-- [Optional: Any specific requirements or dependencies]
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone [your-repository-url]
+   git clone https://github.com/husamfarajallah/portfolio.git
    ```
 2. Open `index.html` in your preferred web browser
 
@@ -50,11 +49,6 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 📬 Contact
 
-[Your Name] - [Your Email]
+Husam Farajallah - mrhusamfa@gmail.com
 
-Project Link: [https://github.com/yourusername/portfolio](https://github.com/yourusername/portfolio)
-
-## 🙏 Acknowledgments
-
-- [Any resources, libraries, or inspiration you'd like to credit]
-- [Any special thanks]
+Project Link: [https://github.com/husamfarajallah/portfolio](https://github.com/husamfarajallah/portfolio)
