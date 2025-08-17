@@ -234,21 +234,23 @@ function showProjectDetails(project) {
     const tags = Array.from(project.querySelectorAll('.skill-tag')).map(tag => tag.textContent.trim());
 
     modalContent.innerHTML = `
-        <div class="relative">
-            <button class="absolute -top-2 -right-2 bg-gray-200 dark:bg-gray-700 rounded-full p-2 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" onclick="closeModal()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="relative max-h-[90vh] overflow-y-auto">
+            <button class="sticky top-2 left-full -ml-10 z-10 bg-gray-200 dark:bg-gray-700 rounded-full p-2 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" onclick="closeModal()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-            <img src="${image}" alt="${title}" class="w-full h-full object-cover rounded-lg mb-4">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${title}</h3>
-            <p class="text-gray-600 dark:text-gray-300 mb-6">${description}</p>
-            <div class="flex flex-wrap gap-2">
-                ${tags.map(tag => `
-                    <span class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-lg text-sm">
-                        ${tag}
-                    </span>
-                `).join('')}
+            <div class="pr-4">
+                <img src="${image}" alt="${title}" class="w-full max-h-full object-cover rounded-lg mb-4">
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${title}</h3>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">${description}</p>
+                <div class="flex flex-wrap gap-2 pb-4">
+                    ${tags.map(tag => `
+                        <span class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-lg text-sm">
+                            ${tag}
+                        </span>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
@@ -257,6 +259,7 @@ function showProjectDetails(project) {
     modalContent.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
 }
+
 
 // Add click event listeners to project cards
 projectCards.forEach(card => {
